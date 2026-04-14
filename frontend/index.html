@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Fortune MVP</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container {
+      max-width: 1120px;
+      margin: 24px auto;
+      padding: 0 16px 28px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1d4ed8, #4338ca);
+      color: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .hero h1 { margin: 0 0 6px; font-size: 24px; }
+    .hero p { margin: 0; opacity: .95; font-size: 14px; }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+    }
+    .panel h3 { margin: 0 0 10px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    input, select, textarea {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+      min-width: 200px;
+      background: #fff;
+      transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #93c5fd;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      outline: none;
+    }
+    textarea { width: 100%; min-height: 72px; resize: vertical; }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: #fff;
+      background: var(--primary);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button.secondary { background: #4b5563; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #d1d5db;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* 模块切换：分段控件，避免与下方主操作按钮视觉混淆 */
+    .tab-bar {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 14px;
+      background: #e5e7eb;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    button.tab-btn {
+      background: transparent !important;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 14px;
+      padding: 8px 18px;
+      border-radius: 9px;
+      box-shadow: none;
+      min-width: auto;
+    }
+    button.tab-btn:hover:not(:disabled) {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.65) !important;
+    }
+    button.tab-btn.active {
+      background: #fff !important;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+    .period-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f3f4f6;
+    }
+    button.period-btn {
+      background: transparent !important;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 7px 12px;
+      min-width: auto;
+    }
+    button.period-btn.active {
+      background: #ffffff !important;
+      color: var(--primary);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    }
+    .module { display: none; }
+    .module.active { display: block; }
+    .module-tip {
+      margin: 4px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .result-card-full { margin-bottom: 12px; }
+    .result-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 150px;
+    }
+    .result-card h4 { margin: 0 0 8px; font-size: 15px; }
+    .result-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 7px;
+      line-height: 1.45;
+    }
+    .result-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #1d4ed8;
+      background: #dbeafe;
+      flex: 0 0 20px;
+      user-select: none;
+    }
+    .result-line b { color: #1f2937; }
+    .assistant-box textarea { min-height: 64px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .list { margin: 8px 0 0 16px; padding: 0; }
+    .list li { margin: 4px 0; }
+    .toast {
+      position: fixed;
+      right: 18px;
+      top: 16px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #fff;
+      background: #111827;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #b91c1c; }
+    .toast.success { background: #047857; }
+    .compact { margin-top: 6px; }
+    @media (max-width: 800px) {
+      .container { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>AI Fortune 命理解读</h1>
+      <p>按模块使用：八字、运势、算卦。</p>
+    </div>
+
+    <div class="panel">
+      <h3>用户信息</h3>
+      <div class="row">
+        <div class="field">
+          <label for="userId">姓名</label>
+          <input id="userId" placeholder="请输入姓名" value="张三" />
+        </div>
+        <div class="field">
+          <label for="gender">性别</label>
+          <select id="gender">
+            <option value="male">男</option>
+            <option value="female">女</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="birthDate">出生日期</label>
+          <input id="birthDate" type="date" value="1998-06-16" />
+        </div>
+        <div class="field">
+          <label for="birthTime">出生时辰</label>
+          <input id="birthTime" type="time" value="08:30" />
+        </div>
+        <div class="field">
+          <label for="birthPlace">出生地（可选）</label>
+          <select id="birthPlace">
+            <option value="">请选择城市（可不选）</option>
+            <option value="北京">北京</option>
+            <option value="上海">上海</option>
+            <option value="广州">广州</option>
+            <option value="深圳">深圳</option>
+            <option value="杭州">杭州</option>
+            <option value="成都">成都</option>
+            <option value="重庆">重庆</option>
+            <option value="武汉">武汉</option>
+            <option value="西安">西安</option>
+            <option value="南京">南京</option>
+            <option value="苏州">苏州</option>
+            <option value="天津">天津</option>
+            <option value="郑州">郑州</option>
+            <option value="长沙">长沙</option>
+            <option value="合肥">合肥</option>
+            <option value="福州">福州</option>
+            <option value="厦门">厦门</option>
+            <option value="南昌">南昌</option>
+            <option value="济南">济南</option>
+            <option value="青岛">青岛</option>
+            <option value="沈阳">沈阳</option>
+            <option value="大连">大连</option>
+            <option value="长春">长春</option>
+            <option value="哈尔滨">哈尔滨</option>
+            <option value="石家庄">石家庄</option>
+            <option value="太原">太原</option>
+            <option value="呼和浩特">呼和浩特</option>
+            <option value="南宁">南宁</option>
+            <option value="昆明">昆明</option>
+            <option value="贵阳">贵阳</option>
+            <option value="海口">海口</option>
+            <option value="兰州">兰州</option>
+            <option value="西宁">西宁</option>
+            <option value="银川">银川</option>
+            <option value="乌鲁木齐">乌鲁木齐</option>
+            <option value="拉萨">拉萨</option>
+            <option value="香港">香港</option>
+            <option value="澳门">澳门</option>
+            <option value="台北">台北</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="timezone">时区</label>
+          <select id="timezone">
+            <option value="Asia/Shanghai">Asia/Shanghai</option>
+            <option value="Asia/Hong_Kong">Asia/Hong_Kong</option>
+            <option value="Asia/Tokyo">Asia/Tokyo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="calendarType">历法类型</label>
+          <select id="calendarType">
+            <option value="solar">公历（当前支持）</option>
+            <option value="lunar">农历（预留）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="topic">关注方向</label>
+          <select id="topic">
+            <option value="">可不选（系统综合解读）</option>
+            <option value="career">事业</option>
+            <option value="relationship">感情</option>
+            <option value="wealth">财运</option>
+            <option value="health">健康</option>
+          </select>
+        </div>
+      </div>
+      <div class="row compact">
+        <button id="btnSaveProfile" class="secondary">保存信息</button>
+        <button id="btnLoadProfile" class="secondary">查询信息</button>
+      </div>
+      <p class="muted">提示：保存成功后会把资料记在浏览器里，刷新页面会自动回填，一般不必再点「查询信息」。换电脑或清缓存后，再点「查询信息」从服务器拉取。</p>
+      <p class="muted">快捷键：在页面任意处按 <b>Alt+Q</b> 可快速执行「查询信息」（需已填写姓名）。</p>
+      <p class="muted">说明：当前八字计算使用公历；已预留农历选项用于后续扩展。</p>
+      <p class="muted">免责声明：内容仅供娱乐与参考，不构成医疗、法律、投资等专业意见。</p>
+    </div>
+
+    <div class="panel">
+      <div class="tab-bar" role="tablist" aria-label="功能模块">
+        <button type="button" id="tabBazi" class="tab-btn active" role="tab" aria-selected="true">八字</button>
+        <button type="button" id="tabFortune" class="tab-btn" role="tab" aria-selected="false">运势</button>
+        <button type="button" id="tabDivination" class="tab-btn" role="tab" aria-selected="false">算卦</button>
+      </div>
+
+      <div id="moduleBazi" class="module active">
+        <h3>八字模块</h3>
+        <p class="module-tip">基于出生信息生成四柱八字、五行、十神与趋势解读。</p>
+        <div class="row">
+          <button id="btnReading">生成八字解读</button>
+        </div>
+      </div>
+
+      <div id="moduleFortune" class="module">
+        <h3>运势模块</h3>
+        <p class="module-tip">结合基础画像生成今日运势与行动建议。</p>
+        <div class="row">
+          <div class="field">
+            <label>运势周期</label>
+            <div class="period-bar" role="group" aria-label="运势周期">
+              <button type="button" id="periodDaily" class="period-btn active" data-period="daily">每日</button>
+              <button type="button" id="periodWeekly" class="period-btn" data-period="weekly">每周</button>
+              <button type="button" id="periodMonthly" class="period-btn" data-period="monthly">每月</button>
+              <button type="button" id="periodYearly" class="period-btn" data-period="yearly">每年</button>
+            </div>
+          </div>
+          <button id="btnDaily">获取运势</button>
+        </div>
+      </div>
+
+      <div id="moduleDivination" class="module">
+        <h3>算卦模块</h3>
+        <p class="module-tip">输入问题后随机起卦并返回建议。</p>
+        <div style="margin-top:8px;">
+          <textarea id="question" placeholder="请输入你想问的问题">我下个月适合换工作吗？</textarea>
+        </div>
+        <div class="row">
+          <button id="btnDivination">发起算卦</button>
+        </div>
+      </div>
+
+      <div id="loadingBox" class="loading">
+        <span class="spinner"></span>
+        <span id="loadingText">正在生成，请稍候...</span>
+      </div>
+    </div>
+
+    <div class="result-card result-card-full">
+      <h4>当前结果</h4>
+      <div id="resultView" class="muted">点击上方按钮开始生成结果。</div>
+    </div>
+    <div class="panel assistant-box">
+      <h3>追问助手</h3>
+      <p class="module-tip">基于当前结果继续提问，获取更聚焦的解释与建议。</p>
+      <textarea id="followupQuestion" placeholder="例如：我应该先从哪些具体行动开始？"></textarea>
+      <div class="row compact">
+        <button id="btnFollowup">提交追问</button>
+      </div>
+      <div id="followupAnswer" class="muted compact">请输入追问问题后点击提交。</div>
+    </div>
+
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const resultView = document.getElementById("resultView");
+    const userIdEl = document.getElementById("userId");
+    const genderEl = document.getElementById("gender");
+    const birthDateEl = document.getElementById("birthDate");
+    const birthTimeEl = document.getElementById("birthTime");
+    const birthPlaceEl = document.getElementById("birthPlace");
+    const timezoneEl = document.getElementById("timezone");
+    const calendarTypeEl = document.getElementById("calendarType");
+    const topicEl = document.getElementById("topic");
+    const periodButtons = [
+      document.getElementById("periodDaily"),
+      document.getElementById("periodWeekly"),
+      document.getElementById("periodMonthly"),
+      document.getElementById("periodYearly")
+    ];
+    const questionEl = document.getElementById("question");
+    const loadingBox = document.getElementById("loadingBox");
+    const loadingText = document.getElementById("loadingText");
+    const toastEl = document.getElementById("toast");
+    const followupQuestionEl = document.getElementById("followupQuestion");
+    const followupAnswerEl = document.getElementById("followupAnswer");
+    const moduleBazi = document.getElementById("moduleBazi");
+    const moduleFortune = document.getElementById("moduleFortune");
+    const moduleDivination = document.getElementById("moduleDivination");
+    const tabBazi = document.getElementById("tabBazi");
+    const tabFortune = document.getElementById("tabFortune");
+    const tabDivination = document.getElementById("tabDivination");
+    const btnSaveProfile = document.getElementById("btnSaveProfile");
+    const btnLoadProfile = document.getElementById("btnLoadProfile");
+    const buttons = [
+      document.getElementById("btnReading"),
+      document.getElementById("btnDaily"),
+      document.getElementById("btnDivination"),
+      document.getElementById("btnFollowup"),
+      btnSaveProfile,
+      btnLoadProfile
+    ];
+    const tabButtons = [tabBazi, tabFortune, tabDivination];
+    const modules = [moduleBazi, moduleFortune, moduleDivination];
+    let latestResult = null;
+    let latestModule = "八字";
+    let selectedFortunePeriod = "daily";
+    const PROFILE_STORAGE_KEY = "ai_fortune_user_profile";
+
+    function persistProfileLocal(profile) {
+      try {
+        localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+      } catch (_e) {}
+    }
+
+    function loadProfileLocal() {
+      try {
+        const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (_e) {
+        return null;
+      }
+    }
+
+    function scoreLine(dimensions) {
+      if (!dimensions) return "";
+      return "事业 " + dimensions.career + " | 感情 " + dimensions.relationship +
+        " | 财运 " + dimensions.wealth + " | 健康 " + dimensions.health;
+    }
+
+    function periodLabel(period) {
+      const map = { daily: "每日", weekly: "每周", monthly: "每月", yearly: "每年" };
+      return map[period] || "每日";
+    }
+
+    function renderResult(json) {
+      if (!json || json.code !== 0 || !json.data) {
+        resultView.innerHTML = "<span class='muted'>暂无可展示结果。</span>";
+        if (json && json.message) {
+          showToast(json.message, "error");
+        }
+        return;
+      }
+      const d = json.data;
+      latestResult = d;
+      const adviceList = d.advice || d.actionAdvice || [];
+      const advice = adviceList.map((v) => "<li>" + v + "</li>").join("");
+      const lines = [];
+      const summary = d.summary || d.interpretation;
+      const baziText =
+        d.bazi && d.bazi.pillars
+          ? (d.bazi.pillars.year + " " + d.bazi.pillars.month + " " + d.bazi.pillars.day + " " + d.bazi.pillars.hour)
+          : "";
+      const wuxingText =
+        d.bazi && d.bazi.wuxing
+          ? ("木" + d.bazi.wuxing["木"] + " 火" + d.bazi.wuxing["火"] + " 土" + d.bazi.wuxing["土"] + " 金" + d.bazi.wuxing["金"] + " 水" + d.bazi.wuxing["水"])
+          : "";
+      const shiShenText =
+        d.bazi && d.bazi.shiShen
+          ? ("年干" + d.bazi.shiShen.yearStem + " | 月干" + d.bazi.shiShen.monthStem + " | 时干" + d.bazi.shiShen.hourStem)
+          : "";
+      const yongShenText =
+        d.bazi && d.bazi.yongShen
+          ? ("主喜" + d.bazi.yongShen.primary + "，辅喜" + d.bazi.yongShen.secondary + "（" + d.bazi.yongShen.suggestion + "）")
+          : "";
+      const daYunText =
+        d.bazi && d.bazi.luck && d.bazi.luck.daYun
+          ? d.bazi.luck.daYun.map((x) => x.period + x.element).join(" / ")
+          : "";
+      const liuNianText =
+        d.bazi && d.bazi.luck && d.bazi.luck.liuNian
+          ? d.bazi.luck.liuNian.map((x) => x.year + "年" + x.element).join(" / ")
+          : "";
+      const dimensionText = d.dimensions ? scoreLine(d.dimensions) : "";
+      function lineItem(label, value, icon) {
+        return "<div class='result-line'><span class='result-icon'>" + icon + "</span><span><b>" + label + "：</b>" + value + "</span></div>";
+      }
+
+      if (summary) lines.push(lineItem("摘要", summary, "要"));
+      if (d.period) lines.push(lineItem("周期", periodLabel(d.period), "周"));
+      if (baziText) lines.push(lineItem("八字", baziText, "八"));
+      if (wuxingText) lines.push(lineItem("五行", wuxingText, "五"));
+      if (shiShenText) lines.push(lineItem("十神", shiShenText, "十"));
+      if (yongShenText) lines.push(lineItem("喜用神", yongShenText, "喜"));
+      if (daYunText) lines.push(lineItem("大运", daYunText, "运"));
+      if (liuNianText) lines.push(lineItem("流年", liuNianText, "年"));
+      if (dimensionText) lines.push(lineItem("分项", dimensionText, "分"));
+      if (d.riskNote) lines.push(lineItem("提示", d.riskNote, "提"));
+      if (adviceList.length > 0) lines.push("<ul class='list'>" + advice + "</ul>");
+
+      resultView.innerHTML = lines.length > 0 ? lines.join("") : "<span class='muted'>暂无可展示结果。</span>";
+      showToast("结果已更新", "success");
+    }
+
+    async function callApi(url, method, body) {
+      try {
+        const resp = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: body ? JSON.stringify(body) : undefined
+        });
+        const json = await resp.json();
+        return json;
+      } catch (err) {
+        const fail = { code: -1, message: "请求失败: " + err.message };
+        return fail;
+      }
+    }
+
+    function setLoading(isLoading, text) {
+      loadingBox.style.display = isLoading ? "flex" : "none";
+      loadingText.textContent = text || "正在生成，请稍候...";
+      buttons.forEach((btn) => { btn.disabled = isLoading; });
+    }
+
+    function showToast(message, type) {
+      toastEl.textContent = message;
+      toastEl.className = "toast show " + (type || "");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toastEl.className = "toast";
+      }, 1800);
+    }
+
+    function validateBaseFields() {
+      if (!userIdEl.value.trim()) {
+        showToast("请先填写姓名", "error");
+        return false;
+      }
+      if (!birthDateEl.value) {
+        showToast("请先选择出生日期", "error");
+        return false;
+      }
+      return true;
+    }
+
+    function collectProfile() {
+      return {
+        userId: userIdEl.value.trim(),
+        gender: genderEl.value,
+        birthDate: birthDateEl.value,
+        birthTime: birthTimeEl.value || "12:00",
+        birthPlace: birthPlaceEl.value || "",
+        timezone: timezoneEl.value,
+        calendarType: calendarTypeEl.value,
+        topic: topicEl.value || ""
+      };
+    }
+
+    function applyProfile(profile) {
+      userIdEl.value = profile.userId || "";
+      genderEl.value = profile.gender || "male";
+      birthDateEl.value = profile.birthDate || "";
+      birthTimeEl.value = profile.birthTime || "12:00";
+      birthPlaceEl.value = profile.birthPlace || "";
+      timezoneEl.value = profile.timezone || "Asia/Shanghai";
+      calendarTypeEl.value = profile.calendarType || "solar";
+      topicEl.value = profile.topic || "";
+    }
+
+    function switchModule(index) {
+      modules.forEach((item, i) => {
+        item.classList.toggle("active", i === index);
+      });
+      tabButtons.forEach((item, i) => {
+        item.classList.toggle("active", i === index);
+        item.setAttribute("aria-selected", i === index ? "true" : "false");
+      });
+    }
+
+    function setFortunePeriod(period) {
+      selectedFortunePeriod = period;
+      periodButtons.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.period === period);
+      });
+    }
+
+    tabBazi.onclick = function () { switchModule(0); };
+    tabFortune.onclick = function () { switchModule(1); };
+    tabDivination.onclick = function () { switchModule(2); };
+    periodButtons.forEach((btn) => {
+      btn.onclick = function () {
+        setFortunePeriod(btn.dataset.period);
+      };
+    });
+
+    document.getElementById("btnReading").onclick = async function () {
+      if (!validateBaseFields()) return;
+      setLoading(true, "正在生成基础解读...");
+      try {
+        const json = await callApi("/api/reading/base", "POST", {
+          userId: userIdEl.value.trim(),
+          gender: genderEl.value,
+          birthDate: birthDateEl.value,
+          birthTime: birthTimeEl.value || "12:00",
+          birthPlace: birthPlaceEl.value.trim(),
+          timezone: timezoneEl.value,
+          calendarType: calendarTypeEl.value,
+          topic: topicEl.value
+        });
+        latestModule = "八字";
+        renderResult(json);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    document.getElementById("btnDaily").onclick = async function () {
+      if (!userIdEl.value.trim()) {
+        showToast("请先填写姓名", "error");
+        return;
+      }
+      setLoading(true, "正在获取运势...");
+      try {
+        const json = await callApi("/api/fortune/daily", "POST", {
+          userId: userIdEl.value.trim(),
+          period: selectedFortunePeriod
+        });
+        latestModule = "运势";
+        renderResult(json);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    document.getElementById("btnDivination").onclick = async function () {
+      if (!userIdEl.value.trim()) {
+        showToast("请先填写姓名", "error");
+        return;
+      }
+      if (!questionEl.value.trim()) {
+        showToast("请先输入问题", "error");
+        return;
+      }
+      setLoading(true, "正在起卦解读...");
+      try {
+        const json = await callApi("/api/divination", "POST", {
+          userId: userIdEl.value.trim(),
+          question: questionEl.value.trim()
+        });
+        latestModule = "算卦";
+        renderResult(json);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    document.getElementById("btnFollowup").onclick = async function () {
+      if (!userIdEl.value.trim()) {
+        showToast("请先填写姓名", "error");
+        return;
+      }
+      if (!latestResult) {
+        showToast("请先生成一次结果再追问", "error");
+        return;
+      }
+      if (!followupQuestionEl.value.trim()) {
+        showToast("请输入追问问题", "error");
+        return;
+      }
+      setLoading(true, "助手正在思考中...");
+      try {
+        const json = await callApi("/api/assistant/followup", "POST", {
+          userId: userIdEl.value.trim(),
+          moduleName: latestModule,
+          currentResult: latestResult,
+          question: followupQuestionEl.value.trim()
+        });
+        if (json.code === 0 && json.data) {
+          followupAnswerEl.innerHTML = "<b>助手回答：</b>" + json.data.answer;
+          showToast("追问回答已生成", "success");
+        } else {
+          followupAnswerEl.innerHTML = "<span class='muted'>暂时无法回答，请稍后重试。</span>";
+          showToast(json.message || "追问失败", "error");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    btnSaveProfile.onclick = async function () {
+      if (!userIdEl.value.trim()) {
+        showToast("请先填写姓名", "error");
+        return;
+      }
+      const snapshot = collectProfile();
+      persistProfileLocal(snapshot);
+      setLoading(true, "正在保存用户信息...");
+      try {
+        const json = await callApi("/api/user/profile", "POST", snapshot);
+        if (json.code === 0) {
+          if (json.data) {
+            applyProfile(json.data);
+            persistProfileLocal(collectProfile());
+          }
+          showToast("用户信息已保存", "success");
+        } else {
+          showToast(json.message || "保存失败", "error");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    async function doLoadProfileFromServer() {
+      if (!userIdEl.value.trim()) {
+        showToast("请输入姓名后再查询", "error");
+        return;
+      }
+      setLoading(true, "正在查询用户信息...");
+      try {
+        const json = await callApi(
+          "/api/user/profile?userId=" + encodeURIComponent(userIdEl.value.trim()),
+          "GET"
+        );
+        if (json.code === 0 && json.data) {
+          applyProfile(json.data);
+          persistProfileLocal(collectProfile());
+          showToast("用户信息已回填", "success");
+        } else {
+          showToast(json.message || "未查到用户信息", "error");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    btnLoadProfile.onclick = function () {
+      doLoadProfileFromServer();
+    };
+
+    document.addEventListener("keydown", function (e) {
+      if (e.altKey && (e.key === "q" || e.key === "Q")) {
+        e.preventDefault();
+        doLoadProfileFromServer();
+      }
+    });
+
+    (function restoreProfileOnLoad() {
+      const local = loadProfileLocal();
+      if (local && local.userId) {
+        applyProfile(local);
+        showToast("已自动恢复上次保存的信息", "success");
+      }
+    })();
+  </script>
+</body>
+</html>
